@@ -1,0 +1,4 @@
+.env
+*/application.properties
+usermicroservice/src/main/resources/application.properties
+application-local.properties
