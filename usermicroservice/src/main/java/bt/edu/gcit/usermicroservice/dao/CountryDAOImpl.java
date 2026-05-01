@@ -50,10 +50,11 @@ return entityManager.createQuery("SELECT c FROM Country c ORDER BY c.name ASC", 
     }
 
     @Override
-    public Country findByCode(String code) {
-        TypedQuery<Country> query = entityManager.createQuery(
-                "SELECT c FROM Country c WHERE c.code = :code", Country.class);
-        query.setParameter("code", code);
-        return query.getSingleResult();
-    }
+public Country findByCode(String code) {
+    TypedQuery<Country> query = entityManager.createQuery(
+            "SELECT c FROM Country c WHERE c.code = :code", Country.class);
+    query.setParameter("code", code);
+    List<Country> results = query.getResultList();
+    return results.isEmpty() ? null : results.get(0);
+}
 }

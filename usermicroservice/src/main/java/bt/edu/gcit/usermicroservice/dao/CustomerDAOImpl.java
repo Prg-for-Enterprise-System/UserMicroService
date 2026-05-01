@@ -26,7 +26,8 @@ public class CustomerDAOImpl implements CustomerDAO {
                 "SELECT c FROM Customer c WHERE c.email = :email",
                 Customer.class);
         query.setParameter("email", email);
-        return query.getSingleResult();
+        List<Customer> results = query.getResultList();
+        return results.isEmpty() ? null : results.get(0);
     }
 
     @Override
@@ -35,7 +36,8 @@ public class CustomerDAOImpl implements CustomerDAO {
                 "SELECT c FROM Customer c WHERE c.verificationCode = :code",
                 Customer.class);
         query.setParameter("code", code);
-        return query.getSingleResult();
+        List<Customer> results = query.getResultList();
+        return results.isEmpty() ? null : results.get(0);
     }
 
     @Override
@@ -49,34 +51,21 @@ public class CustomerDAOImpl implements CustomerDAO {
 
     @Override
     public Customer registerCustomer(Customer customer) {
-
         Country country = customer.getCountry();
-        System.out.println("Country: " + country.getName());
 
         if (country != null) {
-
-            // Fetch the country from the database to ensure it's fully initialized
             country = entityManager.find(Country.class, country.getId());
-
             if (country == null) {
-                // If the country is not found in the database, throw an exception
                 throw new RuntimeException("Country not found");
             }
-
             customer.setCountry(country);
             System.out.println("Country: " + country.getName());
-
-        } else {
-            // If the country is null, throw an exception
-            throw new RuntimeException("Country is null");
         }
+        // if country is null, just skip it — allowed for OAuth users
 
         customer.setAuthenticationType(AuthenticationType.DATABASE);
         entityManager.persist(customer);
         return customer;
-
-        // entityManager.merge(customer);
-        // return customer;
     }
 
     @Override

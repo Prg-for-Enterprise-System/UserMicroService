@@ -37,6 +37,7 @@ public class ShopmeSecurityConfig {
 
     @Autowired
     private CustomerOAuth2UserService oAuth2UserService;
+
     @Autowired
     private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
@@ -55,15 +56,12 @@ public class ShopmeSecurityConfig {
     public AuthenticationProvider authProvider() {
         System.out.println("Hi ");
 
-        // Pass userDetailsService directly to the constructor
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
 
         System.out.println("UserDetailsService: " +
                 userDetailsService.getClass().getName());
-
-        // Remove authProvider.setUserDetailsService(userDetailsService); — no longer
-        // needed
-        authProvider.setPasswordEncoder(passwordEncoder());
 
         System.out.println("AuthProvider: " +
                 authProvider.getClass().getName());
@@ -77,9 +75,11 @@ public class ShopmeSecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(configurer -> configurer
+                        .requestMatchers("/oauth2/**", "/login/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/users").hasAuthority("Admin")
+                        .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/users").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/checkDuplicateEmail").hasAuthority("Admin")
                         .requestMatchers(HttpMethod.PUT, "/api/users/{id}").hasAuthority("Admin")
                         .requestMatchers(HttpMethod.DELETE, "/api/users/{id}").hasAuthority("Admin")
@@ -92,7 +92,8 @@ public class ShopmeSecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/states/{country_id}").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/states").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/states").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/customer/*").permitAll())
+                        .requestMatchers(HttpMethod.POST, "/api/customer/*").permitAll()
+                        .anyRequest().authenticated())
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo

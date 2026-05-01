@@ -12,9 +12,12 @@ import bt.edu.gcit.usermicroservice.dao.CountryDAO;
 import java.util.Date;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class CustomerServiceImpl implements CustomerService {
+    private static final Logger log = LoggerFactory.getLogger(CustomerServiceImpl.class);
     private final CustomerDAO customerDAO;
     private final CountryDAO countryDAO;
     private final PasswordEncoder passwordEncoder;
@@ -110,8 +113,15 @@ public class CustomerServiceImpl implements CustomerService {
         customer.setState("");
         customer.setPhoneNumber("");
         customer.setPostalCode("");
-        customer.setCountry(countryDAO.findByCode(countrycode));
-        System.out.println("Customer: " + customer);
+        Country country = countryDAO.findByCode(countrycode);
+        if (country == null) {
+            log.error("Country not found for code: {}", countrycode);
+            // Option 1: Skip save or redirect to profile completion
+            // return; // or throw custom exception
+            // Option 2: Fallback to default (e.g., Bhutan)
+            country = countryDAO.findByCode("BT");
+        }
+        customer.setCountry(country);
         customerDAO.registerCustomer(customer);
     }
 
