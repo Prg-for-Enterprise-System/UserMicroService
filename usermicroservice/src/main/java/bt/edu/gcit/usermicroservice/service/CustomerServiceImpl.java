@@ -51,6 +51,8 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     @Transactional
     public Customer registerCustomer(Customer customer) {
+        customer.setEnabled(false); // ← add this
+        customer.setCreatedTime(new Date()); // ← add this
         customer.setPassword(passwordEncoder.encode(customer.getPassword()));
         return customerDAO.registerCustomer(customer);
     }

@@ -1,5 +1,5 @@
 package bt.edu.gcit.usermicroservice.dao;
-
+import java.util.List;
 import bt.edu.gcit.usermicroservice.entity.User;
 import org.springframework.stereotype.Repository;
 import jakarta.persistence.EntityManager;
@@ -16,6 +16,15 @@ public class UserDAOImpl implements UserDAO {
     @Autowired
     public UserDAOImpl(EntityManager entityManager) {
         this.entityManager = entityManager;
+    }
+
+    @Override
+    public List<User> getAllUsers() {
+        // Implement the logic to retrieve all users from the database
+        // and return them as a list
+        TypedQuery<User> query = entityManager.createQuery("from User", User.class);
+        List<User> users = query.getResultList();
+        return users;
     }
 
     @Override

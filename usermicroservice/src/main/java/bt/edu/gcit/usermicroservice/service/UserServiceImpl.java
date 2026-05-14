@@ -14,7 +14,7 @@ import org.springframework.util.StringUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
+import java.util.List;
 @Service
 public class UserServiceImpl implements UserService {
 
@@ -28,6 +28,10 @@ public class UserServiceImpl implements UserService {
         this.userDAO = userDAO;
         this.passwordEncoder = passwordEncoder;
     }
+    @Override 
+public List<User> getAllUsers() { 
+return userDAO.getAllUsers(); 
+}
 
     @Override
     @Transactional

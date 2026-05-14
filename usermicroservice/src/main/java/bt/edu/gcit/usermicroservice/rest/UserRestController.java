@@ -1,12 +1,21 @@
 package bt.edu.gcit.usermicroservice.rest;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import bt.edu.gcit.usermicroservice.entity.Role;
 import bt.edu.gcit.usermicroservice.entity.User;
+import bt.edu.gcit.usermicroservice.service.ImageUploadService;
 import bt.edu.gcit.usermicroservice.service.UserService;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,98 +30,118 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-
 @RestController
 @RequestMapping("/api")
 public class UserRestController {
 
     private UserService userService;
+    private ImageUploadService imageUploadService;
 
     @Autowired
-    public UserRestController(UserService userService) {
+    public UserRestController(
+            UserService userService,
+            ImageUploadService imageUploadService) {
+
         this.userService = userService;
+        this.imageUploadService = imageUploadService;
     }
 
     @PostMapping(value = "/users", consumes = "multipart/form-data")
     public User save(
             @RequestPart("firstName") @Valid @NotNull String firstName,
-            @RequestPart("lastName")  @Valid @NotNull String lastName,
-            @RequestPart("email")     @Valid @NotNull String email,
-            @RequestPart("password")  @Valid @NotNull String password,
-            @RequestPart("photo")     @Valid @NotNull MultipartFile photo,
-            @RequestPart("roles")     @Valid @NotNull String rolesJson) {
+
+            @RequestPart("lastName") @Valid @NotNull String lastName,
+
+            @RequestPart("email") @Valid @NotNull String email,
+
+            @RequestPart("password") @Valid @NotNull String password,
+
+            @RequestPart("photo") @Valid @NotNull MultipartFile photo,
+
+            @RequestPart("roles") @Valid @NotNull String rolesJson) {
 
         try {
-            // Create a new User object
+
+            // Create User object
             User user = new User();
+
             user.setFirstName(firstName);
             user.setLastName(lastName);
             user.setEmail(email);
             user.setPassword(password);
 
-            // Parse the roles JSON string into a Set<Role>
+            // Convert roles JSON string to Set<Role>
             ObjectMapper objectMapper = new ObjectMapper();
-            Set<Role> roles = objectMapper.readValue(rolesJson, new TypeReference<Set<Role>>() {});
+
+            Set<Role> roles = objectMapper.readValue(
+                    rolesJson,
+                    new TypeReference<Set<Role>>() {
+                    });
+
             user.setRoles(roles);
 
-            System.out.println("Uploading photo");
+            // Upload image to Cloudinary
+            System.out.println("Uploading photo to Cloudinary...");
 
-            // Save the user and get the ID
-            User savedUser = userService.save(user);
+            String imageUrl = imageUploadService.uploadImage(photo);
 
-            // Upload the user photo
-            System.out.println("Uploading photo " + savedUser.getId().intValue());
-            userService.uploadUserPhoto(savedUser.getId().intValue(), photo);
+            System.out.println("Cloudinary URL: " + imageUrl);
 
-            // Return the saved user
-            return savedUser;
+            // Save Cloudinary URL into photo field
+            user.setPhoto(imageUrl);
+
+            // Save user
+            return userService.save(user);
 
         } catch (IOException e) {
-            // Handle the exception
-            throw new RuntimeException("Error while uploading photo", e);
+
+            throw new RuntimeException(
+                    "Error while uploading photo",
+                    e
+            );
         }
     }
 
     @GetMapping("/users/checkDuplicateEmail")
-    public ResponseEntity<Boolean> checkDuplicateEmail(@RequestParam String email) {
+    public ResponseEntity<Boolean> checkDuplicateEmail(
+            @RequestParam String email) {
+
         boolean isDuplicate = userService.isEmailDuplicate(email);
+
         return ResponseEntity.ok(isDuplicate);
     }
 
-    /**
-     * Updates a user with the given ID using the provided User object.
-     *
-     * @param id          the ID of the user to be updated
-     * @param updatedUser the User object containing the updated information
-     * @return            the updated User object
-     */
     @PutMapping("/users/{id}")
-    public User updateUser(@PathVariable int id, @RequestBody User updatedUser) {
+    public User updateUser(
+            @PathVariable int id,
+            @RequestBody User updatedUser) {
+
         return userService.updateUser(id, updatedUser);
     }
 
     @DeleteMapping("/users/{id}")
     public void deleteUser(@PathVariable int id) {
+
         userService.deleteById(id);
     }
 
-    /**
-     * Update the enabled status of a user with the specified id.
-     *
-     * @param id          the ID of the user to update
-     * @param requestBody request body containing the new enabled status
-     * @return            OK if the update was successful
-     */
     @PutMapping("/users/{id}/enabled")
     public ResponseEntity<?> updateUserEnabledStatus(
             @PathVariable int id,
             @RequestBody Map<String, Boolean> requestBody) {
+
         Boolean enabled = requestBody.get("enabled");
+
         userService.updateUserEnabledStatus(id, enabled);
+
         System.out.println("User enabled status updated successfully");
+
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/users")
+    public List<User> getAllUsers() {
+
+        return userService.getAllUsers();
     }
 }

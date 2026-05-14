@@ -37,7 +37,7 @@ public class User {
     @Column(length = 64, nullable = false)
     private String password;
 
-    @Column(length = 64)
+    @Column(length = 500)
     private String photo;
     
     @ManyToMany(fetch = FetchType.EAGER)
